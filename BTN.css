@@ -1,0 +1,44 @@
+html {
+    background: #454156;
+}
+
+#ctn {
+    width: 99%;
+    height: 80vh;
+    display: block;
+    background: linear-gradient(to bottom, #F0BFFF, #a6aaddd7);
+    border: 20px #2F243A solid;
+    border-radius: 35px;
+    box-sizing: border-box;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+    margin: 10px;
+    gap: 50px;
+}
+  
+button {
+    color: #2F243A;
+    background-color: #EBE0EB;
+    font-weight: bolder;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    margin-right: 10px;
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 18px;
+    width: 300px;
+    cursor: pointer;
+    border: 13px #2F243A solid;
+    border-radius: 20px;
+}
+
+button:hover {
+    background: linear-gradient(to bottom, #F0BFFF, #a6aaddd7);
+    color: white;
+}
+  
