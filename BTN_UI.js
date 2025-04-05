@@ -30,6 +30,13 @@ document.addEventListener( "DOMContentLoaded", function (){
                     "border-color": "#382742"
                 }
             },
+            { selector: "node[targetNode]",
+                style: {
+                    "background-color": "#F7B61B",
+                    "border-width": 4,
+                    "border-color": "#382742"
+                }
+            },
             { selector: "edge",
                 style: {
                     "color": "white",
@@ -56,7 +63,7 @@ document.addEventListener( "DOMContentLoaded", function (){
         }
     });
     
-    //Node    
+    // Node button
     document.getElementById( "addNode" ).addEventListener( "click", function(){
         var nodeId = prompt( "Enter new node name:" );
       
@@ -75,7 +82,7 @@ document.addEventListener( "DOMContentLoaded", function (){
         graph.layout( {name: "grid"} ).run();
     });      
 
-    //Main node    
+    // Main node button
     document.getElementById( "mainNode" ).addEventListener( "click", function (){
         var selectedNodes = graph.elements( "node:selected" );
 
@@ -91,21 +98,38 @@ document.addEventListener( "DOMContentLoaded", function (){
         selectedNodes[0].data( "main", true );
         graph.style().update();
       
-        console.log( "Node", selectedNodes[0].data("id"), "has been set as the main node." );
     });
-        
-    //Edge
+
+    // Target node button
+    document.getElementById("targetNode").addEventListener( "click", function(){
+        var selectedNodes = graph.elements( "node:selected" );
+    
+        if ( selectedNodes.length !== 1 ){
+            alert( "Please select a target node!" );
+            return;
+        }
+    
+        graph.nodes().forEach( function(node){
+            node.removeData("targetNode");
+        });
+    
+        selectedNodes[0].data( "targetNode", true );
+        graph.style().update();
+    
+    });
+    
+    // Edge button
     document.getElementById( "addEdge" ).addEventListener( "click", function (){
         var sourceId = prompt( "Enter the source node's name:" );
         var targetId = prompt( "Enter the target node's name:" );
         var weight = prompt( "Enter the weight of the edge:" );
 
         if ( !sourceId || !targetId ){
-            alert( "Both source and target's name are required!" );
+            alert( "Please enter the source's name, target's name and weight!" );
             return;
         }
         if ( graph.getElementById(sourceId).empty() || graph.getElementById(targetId).empty() ){
-            alert("One or both of the nodes do not exist.");
+            alert("One or both of the nodes do not exist!");
             return;
         }
         if ( isNaN(weight) || weight.trim() === "" || weight <= 0 ){
@@ -113,13 +137,13 @@ document.addEventListener( "DOMContentLoaded", function (){
             return;
         }
 
-        var edgeId = sourceId < targetId ? sourceId + "_" + targetId: targetId + "_" + sourceId;
+        var edgeId = [sourceId, targetId].sort().join("_");
 
-        var existingEdge = graph.edges().filter( function (edge){
+        var exEdge = graph.edges().filter( function (edge){
             var edgeSource = edge.data("source");
             var edgeTarget = edge.data("target");
-            var canonicalId = edgeSource < edgeTarget ? edgeSource + "_" + edgeTarget : edgeTarget + "_" + edgeSource;
-            return canonicalId === edgeId;
+            var canonID = [edgeSource, edgeTarget].sort().join("_");
+            return canonID === edgeId;
         });    
 
         if ( graph.getElementById(edgeId).length > 0 ){
@@ -133,17 +157,17 @@ document.addEventListener( "DOMContentLoaded", function (){
         });
     });
   
-    //Delete Selected
+    // Delete selected button
     document.getElementById( "deleteSelected" ).addEventListener( "click", function (){
-        var selectedElements = graph.elements( ":selected" );
+        var selectedEle = graph.elements( ":selected" );
 
-        graph.remove( selectedElements );
+        graph.remove( selectedEle );
 
-        selectedElements.forEach( function (element) {
+        selectedEle.forEach( function (element) {
             if ( element.isEdge() ){
                 var sourceId = element.data("source");
                 var targetId = element.data("target");
-                var edgeId = sourceId < targetId ? sourceId + "_" + targetId : targetId + "_" + sourceId;
+                var edgeId = [sourceId, targetId].sort().join("_");
                 var edge = graph.getElementById(edgeId);
 
                 if ( edge.length > 0 ){
@@ -156,27 +180,36 @@ document.addEventListener( "DOMContentLoaded", function (){
     });
 
     document.getElementById("runD").addEventListener( "click", function (){
-        var result = window.runDijkstra(graph);
+        var mainNodes = graph.nodes().filter( node => node.data("main") );
+        var targetNodes = graph.nodes().filter( node => node.data("isTarget") );
+
+        if (mainNodes.length !== 1){
+            alert( "Please select main node first!" );
+            return;
+        }
+
+        var source = mainNodes[0].data("id");
+        var target = targetNodes.length ? targetNodes[0].data("id") : null;
+
+        var result = window.runDijkstra( graph, source, target );
+        console.log("Dijkstra result:", result);
+
         var resultWindow = window.open( "", "_blank" );
         resultWindow.document.write(
             "<html>" +
-            "<head>" +
-                "<title>Dijkstra Result</title>" +
-                "<style>" +
-                    "body { font-family: Arial, sans-serif; background: linear-gradient(to bottom, #2F243A, #454156); margin: 0; padding: 20px; }" +
-                    "h1 { color: #2F243A; text-align: center; margin-bottom: 20px; }" +
-                    "p { font-size: 16px; color: #333; line-height: 1.5; text-align: center; }" +
-                    "strong { color: #bf4e69; }" +
-                    ".result-container { background: white; border-radius: 8px; padding: 30px; max-width: 600px; margin: 40px auto; box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1); }" +
-                "</style>" +
-            "</head>" +
-            "<body>" +
-                "<div class='result-container'>" +
-                    "<h1>Dijkstra's Shortest Path Result</h1>" +
-                    "<p><strong>Shortest Distance:</strong> " + result.answer + "</p>" +
-                    "<p><strong>Path:</strong> " + result.answerPath + "</p>" +
-                "</div>" +
-            "</body>" +
+                "<head>" +
+                    "<title>Dijkstra Result</title>" +
+                    "<style>" +
+                        "body { font-family: Arial, sans-serif; background: linear-gradient(to bottom, #2F243A, #454156); margin: 0; padding: 20px; }" + "h1 { color: #2F243A; text-align: center; margin-bottom: 20px; }" + "p { font-size: 16px; color: #333; line-height: 1.5; text-align: center; }" + "strong { color: #bf4e69; }" + ".result-container { background: white; border-radius: 8px; padding: 30px; max-width: 600px; margin: 40px auto; box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1); }" +
+                    "</style>" +
+                "</head>" +
+                "<body>" +
+                    "<div class='result-container'>" +
+                        "<h1>Dijkstra's Shortest Path Result</h1>" +
+                            "<p><strong>Shortest Distance:</strong> " + result.answer + "</p>" +
+                            "<p><strong>Path:</strong> " + result.answerPath + "</p>" +
+                    "</div>" +
+                "</body>" +
             "</html>"
         );
     });
