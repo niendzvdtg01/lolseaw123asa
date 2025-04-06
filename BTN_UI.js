@@ -86,12 +86,12 @@ document.addEventListener( "DOMContentLoaded", function (){
     document.getElementById( "mainNode" ).addEventListener( "click", function (){
         var selectedNodes = graph.elements( "node:selected" );
 
-        if ( selectedNodes.length !== 1 ) {
+        if ( selectedNodes.length !== 1 ){
             alert( "Please select a main node!" );
             return;
         }
 
-        graph.nodes().forEach( function (node) {
+        graph.nodes().forEach( function (node){
             node.removeData("main");
         });
       
@@ -113,7 +113,7 @@ document.addEventListener( "DOMContentLoaded", function (){
             node.removeData("targetNode");
         });
     
-        selectedNodes[0].data( "targetNode", true );
+        selectedNodes[0].data( "targetNode", true ); 
         graph.style().update();
     
     });
@@ -129,11 +129,11 @@ document.addEventListener( "DOMContentLoaded", function (){
             return;
         }
         if ( graph.getElementById(sourceId).empty() || graph.getElementById(targetId).empty() ){
-            alert("One or both of the nodes do not exist!");
+            alert( "One or both of the nodes do not exist!" );
             return;
         }
         if ( isNaN(weight) || weight.trim() === "" || weight <= 0 ){
-            alert("Line's weight must be a positive number!")
+            alert( "Line's weight must be a positive number!" );
             return;
         }
 
@@ -144,30 +144,30 @@ document.addEventListener( "DOMContentLoaded", function (){
             var edgeTarget = edge.data("target");
             var canonID = [edgeSource, edgeTarget].sort().join("_");
             return canonID === edgeId;
-        });    
+        });
 
-        if ( graph.getElementById(edgeId).length > 0 ){
-            alert( "Theres already an edge between these 2 nodes!" );
+        if ( exEdge.length > 0 ){
+            alert( "There's already an edge between these 2 nodes!" );
             return;
         }
-      
-        graph.add ({
+
+        graph.add({
             group: "edges",
             data: { id: edgeId, source: sourceId, target: targetId, weight: weight }
         });
     });
-  
+
     // Delete selected button
     document.getElementById( "deleteSelected" ).addEventListener( "click", function (){
         var selectedEle = graph.elements( ":selected" );
 
         graph.remove( selectedEle );
 
-        selectedEle.forEach( function (element) {
+        selectedEle.forEach( function (element){
             if ( element.isEdge() ){
                 var sourceId = element.data("source");
                 var targetId = element.data("target");
-                var edgeId = [sourceId, targetId].sort().join("_");
+                var edgeId = [ sourceId, targetId ].sort().join("_");
                 var edge = graph.getElementById(edgeId);
 
                 if ( edge.length > 0 ){
@@ -181,36 +181,24 @@ document.addEventListener( "DOMContentLoaded", function (){
 
     document.getElementById("runD").addEventListener( "click", function (){
         var mainNodes = graph.nodes().filter( node => node.data("main") );
-        var targetNodes = graph.nodes().filter( node => node.data("isTarget") );
+        var targetNodes = graph.nodes().filter( node => node.data("targetNode") );
 
-        if (mainNodes.length !== 1){
+        if ( mainNodes.length !== 1 ){
             alert( "Please select main node first!" );
             return;
         }
 
         var source = mainNodes[0].data("id");
-        var target = targetNodes.length ? targetNodes[0].data("id") : null;
-
+        var target = targetNodes.length ? targetNodes[0].data("id"): null;
         var result = window.runDijkstra( graph, source, target );
-        console.log("Dijkstra result:", result);
 
-        var resultWindow = window.open( "", "_blank" );
-        resultWindow.document.write(
-            "<html>" +
-                "<head>" +
-                    "<title>Dijkstra Result</title>" +
-                    "<style>" +
-                        "body { font-family: Arial, sans-serif; background: linear-gradient(to bottom, #2F243A, #454156); margin: 0; padding: 20px; }" + "h1 { color: #2F243A; text-align: center; margin-bottom: 20px; }" + "p { font-size: 16px; color: #333; line-height: 1.5; text-align: center; }" + "strong { color: #bf4e69; }" + ".result-container { background: white; border-radius: 8px; padding: 30px; max-width: 600px; margin: 40px auto; box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1); }" +
-                    "</style>" +
-                "</head>" +
-                "<body>" +
-                    "<div class='result-container'>" +
-                        "<h1>Dijkstra's Shortest Path Result</h1>" +
-                            "<p><strong>Shortest Distance:</strong> " + result.answer + "</p>" +
-                            "<p><strong>Path:</strong> " + result.answerPath + "</p>" +
-                    "</div>" +
-                "</body>" +
-            "</html>"
-        );
+        var resultDiv = document.getElementById("result");
+        if ( target !== null && result.answerPath ){
+            resultDiv.innerHTML = `<p><strong> Shortest Distance: </strong> ${result.answer} </p> <p><strong> Path: </strong> ${result.answerPath} </p>`;
+        } else if (target !== null) {
+            resultDiv.innerHTML = `<p><strong> Shortest Distance: </strong> Unreachable! </p> <p><strong> Path: </strong> No available path! </p>`;
+        } else {
+            resultDiv.innerHTML = `<p><strong> Shortest Distance: </strong> ${result.answer} </p>`;
+        }
     });
 });

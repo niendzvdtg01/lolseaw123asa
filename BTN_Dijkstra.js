@@ -1,20 +1,20 @@
-function getGraphData(graph){ // Phần này convert Cytoscape sang danh sách kề
-    let adjList = {}; // Khởi tạo đối tượng rỗng để lưu danh sách kề
+function getGraphData(graph){ 
+    // Hàm này chuyển đồ thị Cytoscape thành danh sách kề (adjacency list)
+    let adjList = {}; // Danh sách kề
 
-    // Duyệt qua từng đỉnh trong đồ thị và tạo mục nhập
+    // Duyệt qua từng đỉnh trong đồ thị và tạo mục nhập trong danh sách kề
     graph.nodes().forEach( function (node){
-        let id = node.data("id"); // Lấy id của đỉnh hiện tại 
-        adjList[id] = {}; // Khởi tạo danh sách các đỉnh kề của đỉnh này làm đối tượng rỗng
+        let id = node.data("id"); // ID đỉnh hiện tại
+        adjList[id] = {}; // Danh sách các đỉnh kề của đỉnh hiện tại
     });
 
-    // Duyệt qua từng cạnh trong đồ thị để thêm kết nối giữa các nút
+    // Duyệt qua từng cạnh trong đồ thị để thêm kết nối giữa các đỉnh.
     graph.edges().forEach( function (edge){
         let source = edge.data("source"); // Đỉnh đầu cạnh
         let target = edge.data("target"); // Đỉnh đít cạnh
         let weight = parseFloat(edge.data("weight")); // Độ dài cạnh
 
-        /* Dòng 18 với dòng 19 là để đảm bảo là độ dài 2 cạnh như nhau (VD: AB với BA là như nhau)
-        Biết là phần BTN_UI đã có phần đảm bảo cạnh nondirectional r nhưng mà k cho cái này vào là code tính sai :(( */
+        // Đảm bảo danh sách kề là hai chiều (aka đảm bảo là chỉ có 1 đường AB chứ không phải A->B + B->A)
         adjList[source][target] = weight;
         adjList[target][source] = weight;
     });
@@ -22,115 +22,82 @@ function getGraphData(graph){ // Phần này convert Cytoscape sang danh sách k
     return adjList;
 }
 
-function dijkstra( graph, source, target = null ){
-    const paths = {};
-    var shortest = {}; // Này gần giống array đấy. Tập này lưu khoảng cách ngắn nhất đã biết đến từng nút
-    var predecessors = {}; // Tập theo dõi nút cha 
-    var visited = new Set(); // Tập theo dõi các nút đã xử lý.
-    var queue = []; // Tập hàng đợi cho các nút tiếp theo cần dc xử lý
+function dijkstra(graph, source, target = null){
+    // Hàm này căn bản là hàm chính để tính thuật toán Dijkstra
+    var shortest = {}; // Này là gần giống array đấy. Tập này lưu khoảng cách ngắn nhất đã biết đến từng đỉnh
+    var predecessors = {}; // Này theo dõi đỉnh cha của từng đỉnh trong đường đi ngắn nhất
+    var visited = new Set(); // Này theo dõi các đỉnh đã dc xử lý
+    var queue = []; // Này là hàng đợi ưu tiên cho các đỉnh cần xử lý
+    var paths = {}; // Này lưu đường đi đến từng đỉnh
 
-    //Khởi tạo khoảng cách từ nút cha
-    for ( let node in graph ){
-        shortest[node] = Infinity; // Khoảng cách tới all nút ban đầu vô hạn
-        predecessors[node] = null; // Chưa có nút cha nào
+    for (let node in graph){
+        shortest[node] = Infinity; // Đặt khoảng cách ban đầu là vô hạn
+        predecessors[node] = null; // Đỉnh cha null
     }
 
-    shortest[source] = 0; // Khoảng cách đến nút bắt đầu là 0
-    queue.push( {node: source, distance: 0} ); // Thêm nút bắt đầu vào hàng đợi với khoảng cách 0
+    shortest[source] = 0; // Khoảng cách đến đỉnh nguồn là 0
+    paths[source] = [source]; // Đường đi đến đỉnh nguồn là đỉnh nguồn (vì distance = 0 đó)
+    queue.push({node: source, distance: 0}); // Thêm đỉnh nguồn vào hàng đợi
 
-    // Xử lý các nút trong hàng đợi ưu tiên.
-    while ( queue.length > 0 ){
-        queue.sort( (a, b) => a.distance - b.distance ); // Sắp xếp hàng đợi tăng dần
-        const current = queue.shift(); // Lấy ra nút có khoảng cách nhỏ nhất
-        const currentNode = current.node; // Lấy ID của nút nhỏ nhất
-        
-        if ( visited.has(currentNode) ){
-            continue;
-        }
-        visited.add(currentNode);
-      
-          // CHANGED: Early exit if the target is reached.
-        if ( target !== null && currentNode === target ){
-            break; // Exit the loop as soon as we reach the target.
-        }
-      
-        for (let neighbor in graph[currentNode]) {
-            const weight = graph[currentNode][neighbor];
-            const newDistance = shortest[currentNode] + weight;
+    // Xử lý các đỉnh trong hàng đợi ưu tiên.
+    while (queue.length > 0){
+        queue.sort((a, b) => a.distance - b.distance); // Sắp xếp hàng đợi theo khoảng cách tăng dần
+        const current = queue.shift(); // Lấy đỉnh có khoảng cách nhỏ nhất ra khỏi hàng đợi
+        const currentNode = current.node; // Lấy ID của đỉnh hiện tại
 
-            if ( newDistance < shortest[neighbor] ){
-                shortest[neighbor] = newDistance;
-                predecessors[neighbor] = currentNode;
-
-                queue.push( {node: neighbor, distance: newDistance} );
-            }
-        }
-      
-        if ( visited.has(currentNode) ){ // Bỏ qua nút nếu đã dc xử lý
+        if (visited.has(currentNode)){ // Bỏ qua đỉnh đã xử lý
             continue;
         }
 
-        visited.add(currentNode); // Đánh dấu đã dc xử lý.
+        visited.add(currentNode); // Đánh dấu đỉnh đã xử lý
 
-        if ( target !== null && currentNode === target ){
-            break; // Đến đích thì dừng luôn thuật toán
-          }
-      
-        for ( let neighbor in graph[currentNode] ){ // Xử lý từng nút kề
+        if (target !== null && currentNode === target){ // Dừng nếu đến đỉnh đích
+            break;
+        }
+
+        // Duyệt qua từng đỉnh kề của đỉnh hiện tại
+        for (let neighbor in graph[currentNode]){
             const weight = graph[currentNode][neighbor]; // Lấy độ dài cạnh
             const newDistance = shortest[currentNode] + weight; // Tính khoảng cách mới
 
-            // Cập nhật array khoảng cách với nút cha nếu nút mới bé hơn
-            if ( newDistance < shortest[neighbor] ){
-                shortest[neighbor] = newDistance; // Cập nhật khoảng cách ngắn nhất
-                predecessors[neighbor] = currentNode; // Cập nhật nút cha
-                queue.push( { node: neighbor, distance: newDistance } ); // Thêm nút kề vào hàng đợi
+            // Mục đích 3 câu sau là cập nhật khoảng cách ngắn nhất và đỉnh cha nếu tìm thấy đường đi ngắn hơn
+            if (newDistance < shortest[neighbor]){
+                shortest[neighbor] = newDistance; // Khoảng cách min
+                predecessors[neighbor] = currentNode; // Đỉnh cha
+                queue.push({node: neighbor, distance: newDistance}); // Thêm đỉnh kề vào hàng đợi
+
+                // Cập nhật đường đi đến đỉnh kề
+                paths[neighbor] = [...paths[currentNode], neighbor];
             }
         }
-        
-        /* Tìm lại và hiển thị đường đi full (all nút) từ nút bắt đầu đến nút đích sau khi tính khoảng cách. 
-        VD là graph đi qua a sang b đến c thì khi tính khoảng cách a -> c nó sẽ trả lại full đường đi abc */
-        const paths = {};    
-    }
-    
-    for ( let node in graph ){
-        const path = [];
-        let current = node;
-
-        while (current){
-            path.unshift(current);
-            current = predecessors[current];
-        }
-
-        if ( path[0] === source ) {
-            paths[node] = path;
-        } else {
-            paths[node] = [];
-        }
     }
 
-    return { shortest, predecessors, paths };
+    return {shortest, predecessors, paths};
 }
 
-function runDijkstra( graph, source, target = null ){
-    const graphData = getGraphData(graph); // Đổi đồ thị Cytoscape thành danh sách kề
-    const result = dijkstra(graphData, source, target); // Dijkstra
+function runDijkstra(graph, source, target = null){
+    // Hàm này thì chuyển dữ liệu có r để tí đem sang bên BTN_UI để display
+    const graphData = getGraphData(graph); // Cytoscape -> danh sách kề
+    const result = dijkstra(graphData, source, target); // Chạy thuật toán Dijkstra
 
-    let answer = "";
-    let answerPath = "";
-    if ( target !== null ){
-        answer = result.shortest[target];
-        answerPath = result.paths[target].join(" -> ");
+    let answer = ""; // Lưu khoảng cách ngắn nhất đến đích
+    let answerPath = ""; // Lưu đường đến đích
+
+    if (target !== null && result.paths[target]){ // Nếu có đường đi từ main -> target thì nó chạy cái phần này, không thì nó chạy cái else if 
+        answer = result.shortest[target]; // Khoảng cách min đây
+        answerPath = result.paths[target].join(" -> "); // Viết đường đi thành dạng A -> B -> C
+    } else if (target !== null){
+        answer = " No valid length to target! "; 
+        answerPath = " No path to target! "; 
     }
 
-    return{
-        shortest: result.shortest,
-        predecessors: result.predecessors,
-        allPaths: result.paths,
-        answer: answer,
-        answerPath: answerPath
+    return {
+        shortest: result.shortest, 
+        predecessors: result.predecessors, 
+        allPaths: result.paths, 
+        answer: answer, 
+        answerPath: answerPath 
     };
-
 }
 
-window.runDijkstra = runDijkstra; //expose file này để BTN_UI dùng
+window.runDijkstra = runDijkstra; // Xuất hàm để bên BTN_UI nó call dc
